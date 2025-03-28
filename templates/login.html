@@ -26,7 +26,13 @@
             </div>
             {% endfor %}
         </div>
-        <main class="oh-auth">
+        <main class="oh-auth d-flex flex-column">
+            <div class="d-flex flex-column justify-content-center align-items-center">
+                <div class="mb-5">
+                    <!-- INSERT YOUR COMPANY LOGO HERE -->
+                    <img style="opacity: 0.90; width: 350px;" src="{% static 'images/upload/company_large.png' %}" alt="Company">
+                    <!-- INSERT YOUR COMPANY LOGO HERE -->
+                </div>
             <div class="oh-auth-card mb-4">
                 <h1 class="oh-onboarding-card__title oh-onboarding-card__title--h2 text-center my-3">
                     {% trans "Sign In" %}
@@ -97,6 +103,7 @@
                 {% endif %}
             </div>
             <div style="display: contents;">
+                <h6 style="margin-top: 8vh;" class="h6-login-custom justify-content-center d-flex textAlign">Powered by:</h6>
                 <img src={% if white_label_company.icon %}
                         "{{white_label_company.icon.url}}"
                         alt="{{white_label_company_name}}"
@@ -132,3 +139,63 @@
 </body>
 
 </html>
+
+
+<style>
+    .oh-auth-card {
+  border-radius: 12px;
+  background-color: hsl(0, 0%, 100%);
+  width: 90%;
+  max-width: 450px;
+  padding: 2.5rem;
+  -webkit-box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
+    rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+  box-shadow: rgba(0, 0, 0, 0.1) 0px 1px 3px 0px,
+    rgba(0, 0, 0, 0.06) 0px 1px 2px 0px;
+}
+
+.oh-input {
+  border: 1px solid hsl(213, 22%, 84%);
+  border-radius: 12px;
+  padding: 0.8rem 1.25rem;
+  color: hsl(0, 0%, 11%);
+}
+
+.oh-btn {
+  display: block;
+  border: none;
+  border-radius: 12px;
+  padding: 0.8rem 1.25rem;
+  display: -webkit-box;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-align: center;
+  -ms-flex-align: center;
+  align-items: center;
+  -webkit-box-pack: center;
+  -ms-flex-pack: center;
+  justify-content: center;
+  text-align: center;
+  cursor: pointer;
+  color: hsl(219, 9%, 29%);
+}
+@media (max-width: 575.98px) {
+  .oh-btn {
+    font-size: 0.8rem !important;
+    border-radius: 12px!important;
+  }
+}
+
+.oh-btn--secondary {
+  background-color:hsl(8, 77%, 56%);
+  color: hsl(0, 0%, 100%);
+  text-decoration: none;
+  border-radius: 12px!important;
+}
+
+.h6-login-custom {
+    font-size: 1rem;
+    font-weight: bold;
+    color: #c0bcbc;
+  }
+</style>
