@@ -15,6 +15,7 @@ from email.mime.image import MIMEImage
 from os import path
 from urllib.parse import parse_qs, unquote, urlencode, urlparse
 
+
 import pandas as pd
 from dateutil import parser
 from django import forms
@@ -39,6 +40,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.template.loader import render_to_string
 from django.urls import reverse, reverse_lazy
 from django.utils import timezone
+from django.utils.timezone import now
 from django.utils.html import strip_tags
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.utils.translation import gettext as _
@@ -156,6 +158,7 @@ from base.models import (
     WorkType,
     WorkTypeRequest,
     WorkTypeRequestComment,
+    UserSession
 )
 from employee.filters import EmployeeFilter
 from employee.forms import ActiontypeForm, EmployeeGeneralSettingPrefixForm
