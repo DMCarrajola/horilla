@@ -3,22 +3,24 @@ middleware.py
 """
 
 from django.apps import apps
-from django.contrib import messages
 from django.core.cache import cache
+from django.contrib.auth import logout
 from django.db.models import Q
 from django.shortcuts import redirect
+from django.utils.timezone import now
+from django.http import JsonResponse
 
-from base.backends import ConfiguredEmailBackend
 from base.context_processors import AllCompany
 from base.horilla_company_manager import HorillaCompanyManager
-from base.models import Company, ShiftRequest, WorkTypeRequest
+from base.models import Company, ShiftRequest, WorkTypeRequest, UserSession
+from base.backends import ConfiguredEmailBackend
+from horilla.horilla_apps import TWO_FACTORS_AUTHENTICATION
 from employee.models import (
     DisciplinaryAction,
     Employee,
     EmployeeBankDetails,
     EmployeeWorkInformation,
 )
-from horilla.horilla_apps import TWO_FACTORS_AUTHENTICATION
 from horilla.horilla_settings import APPS
 from horilla.methods import get_horilla_model_class
 from horilla_documents.models import DocumentRequest
@@ -58,23 +60,12 @@ class CompanyMiddleware:
         """
         Set the company session data based on the company ID.
         """
-        user = request.user.employee_get
-        user_company_id = getattr(
-            getattr(user, "employee_work_info", None), "company_id", None
-        )
         if company_id and request.session.get("selected_company") != "all":
-            if company_id == "all":
-                text = "All companies"
-            elif company_id == user_company_id:
-                text = "My Company"
-            else:
-                text = "Other Company"
-
             request.session["selected_company"] = str(company_id.id)
             request.session["selected_company_instance"] = {
                 "company": company_id.company,
                 "icon": company_id.icon.url,
-                "text": text,
+                "text": "My company",
                 "id": company_id.id,
             }
         else:
@@ -203,7 +194,7 @@ class ForcePasswordChangeMiddleware:
                 return redirect("change-password")
 
         return self.get_response(request)
-
+    
 
 class TwoFactorAuthMiddleware:
     """
@@ -235,5 +226,41 @@ class TwoFactorAuthMiddleware:
                     return self.get_response(request)
             except Exception as e:
                 return self.get_response(request)
+
+        return self.get_response(request)
+
+
+#Faz a chamada, e continua a chamar-se constantemente.
+#Em cada chamada do token, vê se o tempo limite do token já foi ou não ultrapassado.
+#ATENÇÃO Neste momento tem 2 logs a dar print para garantir que está funcional. Deverão ser limpos quando posto em produção.
+#Se este for ultrapassado (o utilizador não utilizar o pc), procede a fazer log out
+#Caso contrario (o utilizador continua a mexer no pc) este dá refresh ao last activity.
+
+
+class SessionTrackingMiddleware:
+    def __init__(self, get_response):
+        self.get_response = get_response
+
+    def __call__(self, request):
+        print("SessionTrackingMiddleware called")
+        token = request.session.get("custom_token", "")
+
+        if token:
+            try:
+                user_session = UserSession.objects.get(session_token=token)
+                expired = user_session.is_expired(timeout_seconds=60)
+                print(f"Session expired? {expired}")  #LIMPAR ANTES DE IR PARA PRODUÇÃO
+                print(f"Last active: {user_session.last_active}, Now: {now()}")   #LIMPAR ANTES DE IR PARA PRODUÇÃO
+
+                if expired:
+                    if hasattr(request, "user") and request.user.is_authenticated:
+                        logout(request)
+                    request.session.pop("custom_token", None)
+                    return JsonResponse({"detail": "Session expired, due inactivity"}, status=401) 
+                else:
+                    user_session.last_active = now()
+                    user_session.save()
+            except UserSession.DoesNotExist:
+                pass
 
         return self.get_response(request)

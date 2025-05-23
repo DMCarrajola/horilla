@@ -565,6 +565,9 @@ def initialize_job_position_delete(request, obj_id):
     )
 
 
+#Função já existente modificada.
+#É adicionado um token que é criado e enviado para o back-end, através do metodo POST e guardado na base de dados.
+
 def login_user(request):
     """
     Handles user login and authentication.
@@ -594,6 +597,7 @@ def login_user(request):
                 _("An employee related to this user's credentials does not exist."),
             )
             return redirect("login")
+
         if not employee.is_active:
             messages.warning(
                 request,
@@ -604,14 +608,12 @@ def login_user(request):
             return redirect("login")
 
         login(request, user)
-
         messages.success(request, _("Login successful."))
 
-        # Ensure `next_url` is a safe local URL
-        if not url_has_allowed_host_and_scheme(
-            next_url, allowed_hosts={request.get_host()}
-        ):
-            next_url = "/"
+        session_token = uuid.uuid4().hex
+        UserSession.objects.create(user=user, session_token=session_token, last_active=now())
+        request.session["custom_token"] = session_token
+        request.session.modified = True  # garante persistência
 
         if params:
             next_url += f"?{params}"

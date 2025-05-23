@@ -15,6 +15,8 @@ from django.contrib.auth.models import AbstractUser, User
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import gettext_lazy as _
+from django.contrib.auth.models import User
+from django.utils.timezone import now
 
 from base.horilla_company_manager import HorillaCompanyManager
 from horilla import horilla_middlewares
@@ -1835,3 +1837,14 @@ class NotificationSound(models.Model):
 
 
 User.add_to_class("is_new_employee", models.BooleanField(default=False))
+
+class UserSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    session_token = models.CharField(max_length=512, unique=True)
+    last_active = models.DateTimeField(default=now)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def is_expired(self, timeout_seconds):
+        from django.utils.timezone import now
+        return (now() - self.last_active).total_seconds() > timeout_seconds
+

@@ -316,6 +316,34 @@
                 }
             }
         </script>
+                <script>
+            (function () {
+            const TIMEOUT_SECONDS = 30;
+            let timeoutId;
+
+            function resetTimer() {
+                clearTimeout(timeoutId);
+                timeoutId = setTimeout(logoutUser, TIMEOUT_SECONDS * 1000);
+            }
+
+            function logoutUser() {
+                console.log("🕒 Inatividade detectada. A terminar sessão...");
+                fetch('/logout', {
+                method: 'GET',
+                credentials: 'include'
+                }).then(() => {
+                window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname);
+                });
+            }
+
+            // Atividades que reiniciam o tempo de inatividade
+            ['click', 'mousemove', 'keydown', 'scroll', 'touchstart'].forEach(event => {
+                window.addEventListener(event, resetTimer);
+            });
+
+            resetTimer(); // Inicia o temporizador ao carregar a página
+            })();
+        </script>
     {% endif %}
 </body>
 
