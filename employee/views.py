@@ -1282,21 +1282,17 @@ def save_employee_bulk_update(request):
         for id in employee_list:
             try:
                 employee_instance = Employee.objects.get(id=int(id))
-                (
-                    employee_work_info,
-                    created,
-                ) = EmployeeWorkInformation.objects.get_or_create(
-                    employee_id=employee_instance
+                employee_work_info, created = (
+                    EmployeeWorkInformation.objects.get_or_create(
+                        employee_id=employee_instance
+                    )
                 )
-                (
-                    employee_bank,
-                    created,
-                ) = EmployeeBankDetails.objects.get_or_create(
+                employee_bank, created = EmployeeBankDetails.objects.get_or_create(
                     employee_id=employee_instance
                 )
             except (ValueError, OverflowError):
                 employee_list.remove(id)
-                pass
+
         for field in update_fields:
             parts = str(field).split("__")
             if parts[-1]:
@@ -2572,11 +2568,6 @@ def work_info_import(request):
                 try:
                     users = bulk_create_user_import(success_list)
                     employees = bulk_create_employee_import(success_list)
-                    thread = threading.Thread(
-                        target=set_initial_password, args=(employees,)
-                    )
-                    thread.start()
-
                     bulk_create_department_import(success_list)
                     bulk_create_job_position_import(success_list)
                     bulk_create_job_role_import(success_list)
@@ -2584,6 +2575,10 @@ def work_info_import(request):
                     bulk_create_shifts(success_list)
                     bulk_create_employee_types(success_list)
                     bulk_create_work_info_import(success_list)
+                    thread = threading.Thread(
+                        target=set_initial_password, args=(employees,)
+                    )
+                    thread.start()
 
                 except Exception as e:
                     messages.error(request, _("Error Occured {}").format(e))
