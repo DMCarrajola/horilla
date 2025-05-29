@@ -527,7 +527,6 @@ def restrict_leaves(restri):
             restricted_dates.append(date)
     return restricted_dates
 
-
 def leave_requested_dates(start_date, end_date):
     """
     Returns a list of dates from the start date to the end date.
@@ -567,7 +566,6 @@ def cal_effective_requested_days(start_date, end_date, leave_type_id, requested_
         requested_days -= company_leave_count
 
     return requested_days
-
 
 class LeaveRequest(HorillaModel):
     employee_id = models.ForeignKey(
@@ -691,20 +689,25 @@ class LeaveRequest(HorillaModel):
 
     def holiday_dates(self):
         """
-        :return: this functions returns a list of all holiday dates.
+        Returns ONLY holidays that:
+        - Are global (country=None) OR
+        - Match the employee's country EXACTLY (case-sensitive, no whitespace)
         """
         holiday_dates = []
-        holidays = Holidays.objects.all()
+        employee_country = self.employee_id.country  # Raw value (e.g., "Brazil")
+        holidays = Holidays.objects.filter(
+            Q(country__isnull=True) | 
+            Q(country=employee_country)  # Case-sensitive exact match
+        )
+
         for holiday in holidays:
-            holiday_start_date = holiday.start_date
-            holiday_end_date = holiday.end_date
-            if holiday_end_date is None:
-                holiday_end_date = holiday_start_date
-            holiday_days = holiday_end_date - holiday_start_date
-            for i in range(holiday_days.days + 1):
-                date = holiday_start_date + timedelta(i)
-                holiday_dates.append(date)
+            current_date = holiday.start_date
+            end_date = holiday.end_date or current_date
+            while current_date <= end_date:
+                holiday_dates.append(current_date)
+                current_date += timedelta(days=1)
         return holiday_dates
+
 
     def company_leave_dates(self):
         """
@@ -754,29 +757,29 @@ class LeaveRequest(HorillaModel):
         return company_leave_dates
 
     def leaveoverlapping(self):
-        """
-        Checks for overlapping leave requests based on the current instance's dates and employee.
-        """
-        overlapping_requests = LeaveRequest.objects.filter(
-            employee_id=self.employee_id,
-            start_date__lte=self.end_date,
-            end_date__gte=self.start_date,
-        ).exclude(id=self.id)
+            """
+            Checks for overlapping leave requests based on the current instance's dates and employee.
+            """
+            overlapping_requests = LeaveRequest.objects.filter(
+                employee_id=self.employee_id,
+                start_date__lte=self.end_date,
+                end_date__gte=self.start_date,
+            ).exclude(id=self.id)
 
-        if overlapping_requests.exists():
-            existing_leave = overlapping_requests.first()
+            if overlapping_requests.exists():
+                existing_leave = overlapping_requests.first()
 
-            # Handle specific start_date_breakdown and end_date_breakdown mismatch
-            if (
-                existing_leave.start_date == self.start_date
-                and existing_leave.start_date_breakdown != "full_day"
-                and self.start_date_breakdown != "full_day"
-                and existing_leave.start_date_breakdown != self.start_date_breakdown
-                and existing_leave.end_date_breakdown != self.end_date_breakdown
-            ):
-                return LeaveRequest.objects.none()
+                # Handle specific start_date_breakdown and end_date_breakdown mismatch
+                if (
+                    existing_leave.start_date == self.start_date
+                    and existing_leave.start_date_breakdown != "full_day"
+                    and self.start_date_breakdown != "full_day"
+                    and existing_leave.start_date_breakdown != self.start_date_breakdown
+                    and existing_leave.end_date_breakdown != self.end_date_breakdown
+                ):
+                    return LeaveRequest.objects.none()
 
-        return overlapping_requests
+            return overlapping_requests
 
     def save(self, *args, **kwargs):
 

@@ -50,6 +50,15 @@
                     {{ form.company_id }} {{ form.company_id.errors }}
                 </div>
             </div>
+                        <div class="oh-input-group mb-2">
+                <label for="" class=" mb-1">{% trans "Country" %}</label>
+                <select name="country" id="id_country" class="oh-select oh-select-2">
+                    <option value="{{form.instance.country}}" selected>
+                        {{form.instance.country}}
+                    </option>
+                </select>
+                {{form.country.errors}}
+            </div>
             <div class="col-12 col-sm-12 col-md-6 col-lg-6">
                 <label
                     class="oh-label d-block"
@@ -67,4 +76,7 @@
             </button>
         </div>
     </form>
+    <script>
+	{% include 'country.js' %}
+    </script>
 </div>

@@ -1722,6 +1722,14 @@ class Holidays(HorillaModel):
         on_delete=models.PROTECT,
         verbose_name=_("Company"),
     )
+
+    country = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        verbose_name=_("Country"),
+        help_text=_("Leave blank for worldwide holidays")
+    )
     objects = HorillaCompanyManager(related_company_field="company_id")
 
     def __str__(self):
@@ -1741,6 +1749,27 @@ class Holidays(HorillaModel):
         today = today or date.today()
         return Holidays.objects.filter(start_date__lte=today, end_date__gte=today)
 
+    @classmethod
+    def get_applicable_holidays(cls, country_code=None):
+        """Original logic preserved, now with country support"""
+        query = cls.objects.filter(
+            Q(country__isnull=True) | 
+            Q(country__iexact=country_code)
+        ) if country_code else cls.objects.all()
+        return query
+    
+    @classmethod
+    def get_holiday_dates_for_country(cls, country_code=None):
+        """Date expansion logic (new)"""
+        holidays = cls.get_applicable_holidays(country_code)
+        dates = []
+        for holiday in holidays:
+            current_date = holiday.start_date
+            end_date = holiday.end_date or current_date
+            while current_date <= end_date:
+                dates.append(current_date)
+                current_date += timedelta(days=1)
+        return dates
 
 class CompanyLeaves(HorillaModel):
     based_on_week = models.CharField(
